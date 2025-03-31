@@ -1,39 +1,7 @@
-load("gemini.js");
-
-function execute(text, from, to, apiKey) {
-  return translateContent(text, from, to, 0);
-}
-
-/**
- *
- * @param {string} text
- * @param {*} from no require
- * @param {*} to no require
- * @param {number} retryCount
- * @returns
- */
-function translateContent(text, from, to, retryCount) {
-  const apiKey = "AIzaSyDnLSlI88t85D2L83igJvUKKu1Ocxq0eaY";
+async function callGeminiModel(apiKey, inputText) {
   const modelId = "gemini-2.0-flash";
   const generateContentApi = "generateContent";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:${generateContentApi}?key=${apiKey}`;
-
-  if (retryCount > 2) return null;
-  // let lines = text.split("\n");
-  // let data = JSON.stringify(lines.map((line) => ({ Text: line })));
-  // let queries;
-  // if (from) {
-  //   queries = {
-  //     from: from,
-  //     to: to,
-  //     "api-version": "3.0",
-  //   };
-  // } else {
-  //   queries = {
-  //     to: to,
-  //     "api-version": "3.0",
-  //   };
-  // }
 
   const requestBody = {
     contents: [
@@ -97,7 +65,7 @@ function translateContent(text, from, to, retryCount) {
         role: "user",
         parts: [
           {
-            text: text,
+            text: inputText,
           },
         ],
       },
@@ -109,41 +77,33 @@ function translateContent(text, from, to, retryCount) {
     },
   };
 
-  // let response = fetch(
-  //   "https://api-edge.cognitive.microsofttranslator.com/translate",
-  //   {
-  //     method: "POST",
-  //     queries: queries,
-  //     headers: {
-  //       "Content-Type": "application/json",
-  //       Authorization: "Bearer " + getAuthorizationToken(),
-  //     },
-  //     body: data,
-  //   }
-  // );
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+    });
 
-  let response = fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(requestBody),
-  });
-
-  if (response.ok) {
-    // let result = response.text();
-    // if (result.startsWith("[")) {
-    //   let trans = "";
-    //   JSON.parse(result).forEach((item) => {
-    //     trans += item.translations[0].text + "\n";
-    //   });
-    //   return Response.success(trans.trim());
-    // }
-    const data = response.json();
-    const translatedText = data["candidates"][0]["content"]["parts"][0]["text"];
-    if (!translatedText) {
-      return Response.success(translatedText);
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
     }
+
+    const data = await response.json();
+    const text = data["candidates"][0]["content"]["parts"][0]["text"];
+
+    return text;
+  } catch (error) {
+    console.error("LOG", error);
+    throw error;
   }
-  return translateContent(text, from, to, retryCount + 1);
 }
+
+async function translate(text) {
+  const apiKey = "AIzaSyDnLSlI88t85D2L83igJvUKKu1Ocxq0eaY";
+  const result = await translate(apiKey, text);
+  console.log(result);
+}
+
+run();
